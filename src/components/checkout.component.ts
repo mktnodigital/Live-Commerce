@@ -2,12 +2,13 @@
 // Fix: Import signal from @angular/core to resolve undefined reference
 import { Component, inject, output, ChangeDetectionStrategy, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule } from '@angular/forms';
 import { MockDataService, Product } from '../services/mock-data.service';
 
 @Component({
   selector: 'app-checkout',
-  imports: [CommonModule, FormsModule],
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-gray-50 font-sans pb-20">

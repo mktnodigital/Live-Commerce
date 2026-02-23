@@ -5,6 +5,7 @@ import { MockDataService } from '../services/mock-data.service';
 
 @Component({
   selector: 'app-architecture-viewer',
+  standalone: true,
   imports: [CommonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `

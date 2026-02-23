@@ -1,12 +1,13 @@
 
 import { Component, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule } from '@angular/forms';
 import { MockDataService } from '../services/mock-data.service';
 
 @Component({
   selector: 'app-store-dashboard',
-  imports: [CommonModule, FormsModule],
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="p-8 max-w-[1600px] mx-auto h-full flex flex-col dark:bg-neutral-900 dark:text-neutral-100 transition-colors">

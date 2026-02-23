@@ -1,13 +1,13 @@
 
 import { Component, inject, signal, computed, output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { MockDataService, Store, Product } from '../services/mock-data.service';
 
 @Component({
   selector: 'app-product-portal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-[#fafafa] dark:bg-zinc-950 flex flex-col font-sans text-gray-900 dark:text-zinc-100 transition-colors duration-300">
@@ -26,7 +26,7 @@ import { MockDataService, Store, Product } from '../services/mock-data.service';
             <div class="relative w-full group">
               <input 
                 type="text" 
-                [(ngModel)]="searchQuery"
+                [formControl]="searchControl"
                 placeholder="Buscar produtos, lojas ou lives..." 
                 class="w-full bg-gray-100 dark:bg-zinc-800 border-2 border-transparent py-3 px-12 rounded-2xl outline-none text-sm font-medium focus:bg-white dark:focus:bg-zinc-700 focus:border-blue-500 dark:text-zinc-100 transition-all shadow-inner"
               >
@@ -295,17 +295,11 @@ import { MockDataService, Store, Product } from '../services/mock-data.service';
 
     </div>
   `,
-  styles: [`
-    @keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes slide-up { from { opacity: 0; transform: translate(-50%, 40px); } to { opacity: 1; transform: translate(-50%, 0); } }
-    .animate-fade-in { animation: fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-    .animate-slide-up { animation: slide-up 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-  `]
+  styles: []
 })
 export class ProductPortalComponent {
   dataService = inject(MockDataService);
-  searchQuery = signal('');
+  searchControl = new FormControl('');
   goToCheckout = output<void>();
   requestLogin = output<void>();
   cookiesAccepted = signal(false);
@@ -321,3 +315,4 @@ export class ProductPortalComponent {
   acceptCookies() { this.cookiesAccepted.set(true); }
   goHome() { (window as any).location.reload(); }
 }
+

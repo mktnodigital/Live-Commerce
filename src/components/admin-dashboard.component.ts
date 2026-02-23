@@ -1,13 +1,14 @@
 
 import { Component, inject, signal, AfterViewInit, ElementRef, ViewChild, ChangeDetectionStrategy, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { MockDataService, Product, Store, Order, AdminTab, CashFlowEntry, Gateway, LogisticsProvider } from '../services/mock-data.service';
 import * as d3 from 'd3';
 
 @Component({
   selector: 'app-admin-dashboard',
-  imports: [CommonModule, FormsModule],
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="p-4 md:p-10 max-w-[1750px] mx-auto min-h-screen space-y-10 animate-fade-in pb-20 dark:bg-slate-950 dark:text-slate-100">
@@ -137,28 +138,81 @@ import * as d3 from 'd3';
         </div>
       }
 
+      <!-- MODALS -->
+      @if (showGatewayModal()) {
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-6 animate-fade-in">
+          <div class="bg-white dark:bg-slate-900 rounded-[3rem] p-10 w-full max-w-lg shadow-2xl scale-in">
+            <h3 class="text-2xl font-black text-slate-900 dark:text-white mb-6">Configurar Gateway</h3>
+            <form [formGroup]="gatewayForm" (ngSubmit)="saveGateway()" class="space-y-6">
+              <div class="space-y-2">
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Nome do Provedor</label>
+                <input type="text" formControlName="name" class="w-full bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-500 outline-none p-4 rounded-2xl text-sm font-medium transition-all">
+              </div>
+              <div class="space-y-2">
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">API Key de Produção</label>
+                <input type="text" formControlName="apiKey" class="w-full bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-500 outline-none p-4 rounded-2xl text-sm font-mono transition-all">
+              </div>
+              <div class="flex gap-4 pt-4">
+                <button type="button" (click)="showGatewayModal.set(false)" class="flex-1 py-4 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Cancelar</button>
+                <button type="submit" [disabled]="gatewayForm.invalid" class="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:scale-105 transition-all disabled:opacity-50">Salvar Gateway</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      }
+
+      @if (showCashModal()) {
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-6 animate-fade-in">
+          <div class="bg-white dark:bg-slate-900 rounded-[3rem] p-10 w-full max-w-lg shadow-2xl scale-in">
+            <h3 class="text-2xl font-black text-slate-900 dark:text-white mb-6">Novo Lançamento</h3>
+            <form [formGroup]="cashForm" (ngSubmit)="saveCashEntry()" class="space-y-6">
+              <div class="grid grid-cols-2 gap-4">
+                <button type="button" (click)="cashForm.patchValue({type: 'in'})" [class.bg-green-600]="cashForm.get('type')?.value === 'in'" [class.text-white]="cashForm.get('type')?.value === 'in'" class="py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border-2 border-transparent bg-slate-50 dark:bg-slate-800 transition-all">Entrada</button>
+                <button type="button" (click)="cashForm.patchValue({type: 'out'})" [class.bg-red-600]="cashForm.get('type')?.value === 'out'" [class.text-white]="cashForm.get('type')?.value === 'out'" class="py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border-2 border-transparent bg-slate-50 dark:bg-slate-800 transition-all">Saída</button>
+              </div>
+              <div class="space-y-2">
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Valor (R$)</label>
+                <input type="number" formControlName="amount" class="w-full bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-500 outline-none p-4 rounded-2xl text-sm font-black transition-all">
+              </div>
+              <div class="space-y-2">
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Descrição</label>
+                <input type="text" formControlName="description" class="w-full bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-500 outline-none p-4 rounded-2xl text-sm font-medium transition-all">
+              </div>
+              <div class="flex gap-4 pt-4">
+                <button type="button" (click)="showCashModal.set(false)" class="flex-1 py-4 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Cancelar</button>
+                <button type="submit" [disabled]="cashForm.invalid" class="flex-1 bg-slate-900 dark:bg-white dark:text-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:scale-105 transition-all disabled:opacity-50">Confirmar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      }
+
     </div>
   `,
-  styles: [`
-    @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .animate-fade-in { animation: fade-in 0.5s ease-out; }
-  `]
+  styles: []
 })
 export class AdminDashboardComponent implements AfterViewInit {
+  private fb = inject(FormBuilder);
   dataService = inject(MockDataService);
   totalCommissions = computed(() => this.dataService.orders().reduce((acc, curr) => acc + curr.commission, 0));
   totalSalesVolume = computed(() => this.dataService.orders().reduce((acc, curr) => acc + curr.total, 0));
   totalBalance = computed(() => this.dataService.cashFlow().reduce((acc, curr) => curr.type === 'in' ? acc + curr.amount : acc - curr.amount, 0));
   @ViewChild('chartContainer') chartContainer!: ElementRef;
 
-  showGatewayModal = false;
-  editingGateway: Gateway | null = null;
-  gatewayForm = { name: '', apiKey: '', status: 'active' as 'active' | 'inactive' };
-  showStoreModal = false;
-  editingStore: Store | null = null;
-  storeForm = { name: '', subdomain: '', commission_rate: 15, status: 'active' as 'active' | 'blocked' };
-  showCashModal = false;
-  cashForm = { type: 'in' as const, amount: 0, description: '' };
+  showGatewayModal = signal(false);
+  showCashModal = signal(false);
+
+  gatewayForm = this.fb.group({
+    name: ['', [Validators.required]],
+    apiKey: ['', [Validators.required]],
+    status: ['active' as 'active' | 'inactive']
+  });
+
+  cashForm = this.fb.group({
+    type: ['in' as 'in' | 'out', [Validators.required]],
+    amount: [0, [Validators.required, Validators.min(0.01)]],
+    description: ['', [Validators.required]]
+  });
 
   constructor() {
     effect(() => {
@@ -167,7 +221,9 @@ export class AdminDashboardComponent implements AfterViewInit {
       }
     });
   }
+
   ngAfterViewInit() { this.renderChart(); }
+
   getActiveTabLabel(): string {
     const labels: Record<AdminTab, string> = {
       dashboard: 'Dashboard Global', stores: 'Representantes', inventory: 'Estoque Central',
@@ -176,18 +232,31 @@ export class AdminDashboardComponent implements AfterViewInit {
     };
     return labels[this.dataService.adminView()] || 'Admin Center';
   }
-  openGatewayModal() { this.editingGateway = null; this.gatewayForm = { name: '', apiKey: '', status: 'active' }; this.showGatewayModal = true; }
-  editGateway(gw: Gateway) { this.editingGateway = gw; this.gatewayForm = { name: gw.name, apiKey: gw.apiKey, status: gw.status }; this.showGatewayModal = true; }
-  saveGateway() {
-    if (this.editingGateway) { this.dataService.updateGateway({ ...this.editingGateway, ...this.gatewayForm }); }
-    else { this.dataService.addGateway(this.gatewayForm); }
-    this.showGatewayModal = false;
+
+  openGatewayModal() {
+    this.gatewayForm.reset({ status: 'active' });
+    this.showGatewayModal.set(true);
   }
-  openStoreModal() { this.editingStore = null; this.storeForm = { name: '', subdomain: '', commission_rate: 15, status: 'active' }; this.showStoreModal = true; }
-  editStore(store: Store) { this.editingStore = store; this.storeForm = { name: store.name, subdomain: store.subdomain, commission_rate: store.commission_rate, status: store.status }; this.showStoreModal = true; }
-  saveStore() { if (this.editingStore) { this.dataService.updateStore({ ...this.editingStore, ...this.storeForm }); } else { this.dataService.addStore(this.storeForm); } this.showStoreModal = false; }
-  openCashModal() { this.cashForm = { type: 'in', amount: 0, description: '' }; this.showCashModal = true; }
-  saveCashEntry() { if (this.cashForm.amount <= 0) return; this.dataService.addCashEntry({ ...this.cashForm }); this.showCashModal = false; }
+
+  saveGateway() {
+    if (this.gatewayForm.invalid) return;
+    const val = this.gatewayForm.value as any;
+    this.dataService.addGateway(val);
+    this.showGatewayModal.set(false);
+  }
+
+  openCashModal() {
+    this.cashForm.reset({ type: 'in', amount: 0 });
+    this.showCashModal.set(true);
+  }
+
+  saveCashEntry() {
+    if (this.cashForm.invalid) return;
+    const val = this.cashForm.value as any;
+    this.dataService.addCashEntry(val);
+    this.showCashModal.set(false);
+  }
+
   renderChart() {
     if (!this.chartContainer || this.dataService.adminView() !== 'dashboard') return;
     const data = this.dataService.stores().map(s => ({ name: s.name, value: s.total_earned }));
