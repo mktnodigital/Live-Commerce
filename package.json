@@ -4,10 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "start": "node server.ts",
+    "start": "node server.js",
     "lint": "tsc --noEmit",
     "dev": "ng serve",
-    "build": "ng build",
+    "build": "ng build --configuration production",
     "preview": "ng serve --configuration=production"
   },
   "dependencies": {
