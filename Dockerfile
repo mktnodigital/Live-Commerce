@@ -17,10 +17,10 @@ FROM node:22-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
+# Cloud Run injeta a porta, mas definimos 8080 como padrão
 ENV PORT=8080
 ENV HOSTNAME="0.0.0.0"
 
-# O Next.js standalone não precisa de root
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
@@ -32,5 +32,5 @@ USER nextjs
 
 EXPOSE 8080
 
-# O modo standalone gera um server.js na raiz da pasta standalone
+# O modo standalone gera um server.js que escuta em HOSTNAME:PORT
 CMD ["node", "server.js"]
