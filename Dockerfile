@@ -1,22 +1,36 @@
-# Stage 1: Build
-FROM node:22-slim AS build
+# Stage 1: Dependências
+FROM node:22-alpine AS deps
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
+
+# Stage 2: Build
+FROM node:22-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
-# Stage 2: Runtime
-FROM node:22-slim
+# Stage 3: Runner
+FROM node:22-alpine AS runner
 WORKDIR /app
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/server.js ./
-COPY --from=build /app/package*.json ./
-RUN npm install --omit=dev
 
-# Configurações recomendadas pelo Cloud Run
+ENV NODE_ENV=production
 ENV PORT=8080
+ENV HOSTNAME="0.0.0.0"
+
+# O Next.js standalone não precisa de root
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
+
 EXPOSE 8080
 
-# Causa 3: CMD correto conforme orientação
+# O modo standalone gera um server.js na raiz da pasta standalone
 CMD ["node", "server.js"]

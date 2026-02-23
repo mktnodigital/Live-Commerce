@@ -4,24 +4,16 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "lint": "tsc --noEmit",
-    "dev": "ng serve",
-    "build": "ng build --configuration production",
-    "preview": "ng serve --configuration=production"
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "next lint"
   },
   "dependencies": {
-    "@angular/build": "^21.1.0",
-    "@angular/cli": "^21.1.0",
-    "@angular/common": "^21.1.0",
-    "@angular/compiler": "^21.1.0",
-    "@angular/compiler-cli": "^21.1.0",
-    "@angular/core": "^21.1.0",
-    "@angular/forms": "^21.1.3",
-    "@angular/platform-browser": "^21.1.0",
-    "@types/express": "^5.0.6",
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest",
     "d3": "^7.9.0",
-    "express": "^5.2.1",
     "rxjs": "^7.8.2",
     "tailwindcss": "latest"
   },
